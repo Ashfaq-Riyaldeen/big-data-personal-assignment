@@ -60,6 +60,8 @@ public final class Dashboard implements AutoCloseable {
     private final String topic;
     private final String dlqTopic;
     private final String consumerGroup;
+    /** Summary of the retry configuration; the dashboard clears the startup banner that showed it. */
+    private final String retryPolicyDescription;
 
     private final long startedAtMillis = System.currentTimeMillis();
     private final ScheduledExecutorService scheduler =
@@ -76,7 +78,8 @@ public final class Dashboard implements AutoCloseable {
                      String bootstrapServers,
                      String topic,
                      String dlqTopic,
-                     String consumerGroup) {
+                     String consumerGroup,
+                     String retryPolicyDescription) {
         this.aggregator = aggregator;
         this.metrics = metrics;
         this.events = events;
@@ -85,6 +88,7 @@ public final class Dashboard implements AutoCloseable {
         this.topic = topic;
         this.dlqTopic = dlqTopic;
         this.consumerGroup = consumerGroup;
+        this.retryPolicyDescription = retryPolicyDescription;
     }
 
     /** Begins repainting at roughly 4 frames per second. */
@@ -138,6 +142,9 @@ public final class Dashboard implements AutoCloseable {
                 .append("  |  topic ").append(topic)
                 .append("  |  group ").append(consumerGroup)
                 .append("  |  dlq ").append(dlqTopic)
+                .append(RESET).append('\n');
+        frame.append(DIM)
+                .append("  retry: ").append(retryPolicyDescription)
                 .append(RESET).append("\n\n");
     }
 

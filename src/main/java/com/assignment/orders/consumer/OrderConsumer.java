@@ -131,7 +131,7 @@ public final class OrderConsumer {
 
             Dashboard dashboard = dashboardEnabled
                     ? new Dashboard(aggregator, metrics, events, System.out,
-                    bootstrapServers, topic, dlqTopic, group)
+                    bootstrapServers, topic, dlqTopic, group, retryPolicy.describe())
                     : null;
 
             // Ctrl+C arrives on a different thread. wakeup() makes the in-flight poll() throw

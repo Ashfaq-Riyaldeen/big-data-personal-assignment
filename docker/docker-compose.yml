@@ -85,20 +85,21 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    # Runs once, creates the topics, exits 0. `--if-exists` keeps `up` idempotent.
-    command: >
-      bash -c "
+    # Runs once, creates the topics, exits 0. `--if-not-exists` keeps `up` idempotent.
+    #
+    # A literal block scalar (|) is used rather than a folded one (>): in folded style, lines
+    # indented further than the first are kept verbatim with their newlines, which would split
+    # a wrapped kafka-topics invocation into two broken commands. Each command stays on one line.
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
         set -e
         echo 'Creating topics...'
-        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists
-          --topic orders --partitions 3 --replication-factor 1
-        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists
-          --topic orders.DLQ --partitions 1 --replication-factor 1
-          --config retention.ms=604800000
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic orders --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic orders.DLQ --partitions 1 --replication-factor 1 --config retention.ms=604800000
         echo ''
         echo 'Topics now present:'
         kafka-topics --bootstrap-server kafka:29092 --list
-      "
     restart: "no"
 
   kafka-ui:
