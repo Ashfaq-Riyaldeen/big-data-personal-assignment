@@ -1,0 +1,32 @@
+# Build output (includes target/generated-sources/avro -- Order.java is generated
+# from src/main/avro/order.avsc at build time, so the schema stays the single source
+# of truth and generated code is never committed).
+target/
+*.class
+
+# Jars, except the Maven Wrapper's own bootstrap jar, which MUST be committed so the
+# project builds on a machine with no Maven installed.
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Maven Wrapper's downloaded distributions
+.mvn/wrapper/maven-wrapper.properties.bak
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local overrides
+.env
+*.local
