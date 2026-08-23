@@ -204,6 +204,7 @@ common ones as parameters.
 | `JITTER_FACTOR` | `0.2` | Proportional jitter (±20%) |
 | `WINDOW_SECONDS` | `60` | Sliding window width |
 | `DASHBOARD_ENABLED` | `true` | `false` falls back to plain log lines |
+| `RUN_FOR_SECONDS` | `0` | Stop cleanly after N seconds; `0` runs until Ctrl+C |
 
 ### Useful combinations
 

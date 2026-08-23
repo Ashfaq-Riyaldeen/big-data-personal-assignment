@@ -69,6 +69,8 @@ public final class OrderConsumer {
 
     private final String topic;
     private final boolean dashboardEnabled;
+    /** Stop cleanly after this many milliseconds; 0 runs until interrupted. */
+    private final long runForMillis;
     private final AtomicBoolean running = new AtomicBoolean(true);
 
     private OrderConsumer(KafkaConsumer<String, byte[]> consumer,
@@ -80,7 +82,8 @@ public final class OrderConsumer {
                           ProcessingMetrics metrics,
                           EventLog events,
                           String topic,
-                          boolean dashboardEnabled) {
+                          boolean dashboardEnabled,
+                          long runForMillis) {
         this.consumer = consumer;
         this.avroDeserializer = avroDeserializer;
         this.processor = processor;
@@ -91,6 +94,7 @@ public final class OrderConsumer {
         this.events = events;
         this.topic = topic;
         this.dashboardEnabled = dashboardEnabled;
+        this.runForMillis = runForMillis;
     }
 
     public static void main(String[] args) {
@@ -127,7 +131,8 @@ public final class OrderConsumer {
 
             OrderConsumer app = new OrderConsumer(
                     kafkaConsumer, avroDeserializer, processor, retryPolicy, dlq,
-                    aggregator, metrics, events, topic, dashboardEnabled);
+                    aggregator, metrics, events, topic, dashboardEnabled,
+                    AppConfig.runForSeconds() * 1000L);
 
             Dashboard dashboard = dashboardEnabled
                     ? new Dashboard(aggregator, metrics, events, System.out,
@@ -168,7 +173,17 @@ public final class OrderConsumer {
             consumer.subscribe(List.of(topic));
             note(EventLog.Level.INFO, "subscribed to " + topic);
 
+            // A bounded run exits through the same path as Ctrl+C, so offsets are still committed
+            // and the final totals still print.
+            long deadline = runForMillis > 0
+                    ? System.currentTimeMillis() + runForMillis
+                    : Long.MAX_VALUE;
+
             while (running.get()) {
+                if (System.currentTimeMillis() >= deadline) {
+                    note(EventLog.Level.INFO, "run time limit reached, shutting down");
+                    break;
+                }
                 ConsumerRecords<String, byte[]> records = consumer.poll(POLL_TIMEOUT);
                 if (records.isEmpty()) {
                     continue;

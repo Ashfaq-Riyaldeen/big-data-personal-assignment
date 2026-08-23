@@ -129,6 +129,17 @@ public final class AppConfig {
         return bool("DASHBOARD_ENABLED", true);
     }
 
+    /**
+     * Stop the consumer cleanly after this many seconds, or 0 to run until interrupted.
+     *
+     * <p>Exists so the pipeline can be exercised without a human pressing Ctrl+C: a bounded run
+     * shuts down through the normal path, committing offsets and printing its final totals, which
+     * makes an automated or scripted verification reproducible.
+     */
+    public static long runForSeconds() {
+        return lng("RUN_FOR_SECONDS", 0L);
+    }
+
     /* --------------------------------------------------------------------- parsing */
 
     static String str(String name, String fallback) {

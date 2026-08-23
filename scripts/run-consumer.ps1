@@ -9,6 +9,9 @@
     Total attempts per record, including the first.
 .PARAMETER Group
     Consumer group id. Use a fresh name to re-read the topic from the beginning.
+.PARAMETER RunForSeconds
+    Stop cleanly after this many seconds instead of running until Ctrl+C. Offsets are still
+    committed and the final totals still print, which makes a scripted run reproducible.
 .PARAMETER NoDashboard
     Print plain log lines instead of the live panel. Use this if the terminal does not render
     ANSI escape sequences.
@@ -26,14 +29,16 @@ param(
     [double]$FailureRate,
     [int]$MaxAttempts,
     [string]$Group,
+    [long]$RunForSeconds,
     [switch]$NoDashboard
 )
 
 . (Join-Path $PSScriptRoot '_common.ps1')
 
-if ($PSBoundParameters.ContainsKey('FailureRate')) { $env:TRANSIENT_FAILURE_RATE = $FailureRate }
-if ($PSBoundParameters.ContainsKey('MaxAttempts')) { $env:MAX_ATTEMPTS = $MaxAttempts }
-if ($PSBoundParameters.ContainsKey('Group'))       { $env:CONSUMER_GROUP = $Group }
-if ($NoDashboard)                                  { $env:DASHBOARD_ENABLED = 'false' }
+if ($PSBoundParameters.ContainsKey('FailureRate'))   { $env:TRANSIENT_FAILURE_RATE = $FailureRate }
+if ($PSBoundParameters.ContainsKey('MaxAttempts'))   { $env:MAX_ATTEMPTS = $MaxAttempts }
+if ($PSBoundParameters.ContainsKey('Group'))         { $env:CONSUMER_GROUP = $Group }
+if ($PSBoundParameters.ContainsKey('RunForSeconds')) { $env:RUN_FOR_SECONDS = $RunForSeconds }
+if ($NoDashboard)                                    { $env:DASHBOARD_ENABLED = 'false' }
 
 Start-JavaMain -MainClass 'com.assignment.orders.consumer.OrderConsumer'
