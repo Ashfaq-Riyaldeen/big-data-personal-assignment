@@ -47,9 +47,41 @@ if (-not $ready) {
     throw "Kafka stack failed to start."
 }
 
+# A healthy broker only means it is accepting connections. It says nothing about whether the
+# topics this application needs actually exist: kafka-init is a separate one-shot job that can
+# fail on its own, and auto-creation is deliberately disabled in the compose file. Without this
+# check the script happily reports "Ready" for a stack the producer cannot use -- a false green
+# in the one script the live demo depends on, which is worse than an honest failure.
+$requiredTopics = @('orders', 'orders.DLQ')
+$existingTopics = @(
+    (docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list 2>$null) -split "`n" |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -ne '' }
+)
+$missingTopics = @($requiredTopics | Where-Object { $existingTopics -notcontains $_ })
+
+if ($missingTopics.Count -gt 0) {
+    Write-Host ""
+    Write-Host "  The broker is healthy, but these required topics are missing:" -ForegroundColor Red
+    Write-Host "      $($missingTopics -join ', ')" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  Topic creation runs in the kafka-init container. Its last output was:" -ForegroundColor Yellow
+    docker logs kafka-init 2>&1 | Select-Object -Last 20
+    Write-Host ""
+    Write-Host "  Retry topic creation with:" -ForegroundColor Yellow
+    Write-Host "      docker compose -f docker/docker-compose.yml up -d --force-recreate kafka-init"
+    throw "Topic creation failed; the stack is not usable."
+}
+
 Write-Host ""
 Write-Host "  Topics:" -ForegroundColor DarkGray
-docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list
+foreach ($topic in $existingTopics) {
+    if ($requiredTopics -contains $topic) {
+        Write-Host "      $topic" -ForegroundColor Green
+    } else {
+        Write-Host "      $topic" -ForegroundColor DarkGray
+    }
+}
 
 Write-Host ""
 Write-Host "  Registered schema subjects:" -ForegroundColor DarkGray
