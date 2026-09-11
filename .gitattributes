@@ -1,0 +1,17 @@
+# Normalise line endings so the repository behaves identically on Windows, Linux and macOS.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF; cmd.exe is unreliable with LF-only batch files.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# The Maven Wrapper POSIX script must keep LF. With CRLF the shebang carries a trailing
+# carriage return, the shell reports "bad interpreter", and a Linux or macOS clone cannot build.
+mvnw text eol=lf
+
+# Binary assets: never normalise these.
+*.jar binary
+*.pdf binary
+*.png binary
+*.avro binary
