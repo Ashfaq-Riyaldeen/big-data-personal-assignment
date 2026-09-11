@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.2</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.ashfaq.bigdata</groupId>
+  <artifactId>big-data-assignment-3</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+
+  <name>Real-Time Order Analytics and Failure Handling with Apache Kafka</name>
+  <description>
+    Kafka producer and consumer for Avro-serialised order messages, with a real-time running
+    average of prices, retry handling for temporary failures, and a dead letter queue for
+    permanently failed messages.
+  </description>
+
+  <modules>
+    <module>common-avro</module>
+    <module>producer-service</module>
+    <module>consumer-service</module>
+  </modules>
+
+  <properties>
+    <java.version>21</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!--
+      Version alignment matters here. Confluent Platform 7.9.x builds its serialisers against
+      Avro 1.11.x (io.confluent:common-parent:7.9.1 declares avro.version 1.11.4). Pulling in
+      Avro 1.12 alongside a 7.9 kafka-avro-serializer causes NoSuchMethodError at runtime, so
+      the runtime Avro library and the avro-maven-plugin that generates Order.java are both
+      pinned to the same 1.11.4. Do not bump one without the other.
+
+      kafka-clients is deliberately left to Spring Boot's dependency management (3.8.1 for
+      Boot 3.4.2). Confluent ships 7.9.1-ccs (Kafka 3.9.1), but the serialisers only use the
+      stable Serializer/Deserializer interfaces, and a 3.8.1 client against a 3.9.1 broker is
+      a supported combination.
+    -->
+    <confluent.version>7.9.1</confluent.version>
+    <avro.version>1.11.4</avro.version>
+    <springdoc.version>2.8.4</springdoc.version>
+  </properties>
+
+  <repositories>
+    <!-- kafka-avro-serializer and the Schema Registry client live here, not on Maven Central. -->
+    <repository>
+      <id>confluent</id>
+      <name>Confluent</name>
+      <url>https://packages.confluent.io/maven/</url>
+    </repository>
+  </repositories>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.ashfaq.bigdata</groupId>
+        <artifactId>common-avro</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${avro.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>kafka-avro-serializer</artifactId>
+        <version>${confluent.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>kafka-schema-registry-client</artifactId>
+        <version>${confluent.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        <version>${springdoc.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Configured with an execution in common-avro, where order.avsc lives. -->
+        <plugin>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro-maven-plugin</artifactId>
+          <version>${avro.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>
