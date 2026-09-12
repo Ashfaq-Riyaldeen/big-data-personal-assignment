@@ -1,0 +1,44 @@
+server:
+  # 8082: the producer owns 8080, the Schema Registry 8081, Kafka UI 8090.
+  port: 8082
+
+spring:
+  application:
+    name: consumer-service
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${CONSUMER_GROUP_ID:orders-consumer-v1}
+      # Only applies when the group has no committed offset, so a fresh consumer catches up
+      # on orders published before it started rather than silently skipping them.
+      auto-offset-reset: earliest
+      # Both deserializers are wrapped: a record that cannot be deserialised is handed to the
+      # error handler instead of being thrown on the poll thread, which would otherwise stop
+      # the listener container dead.
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: io.confluent.kafka.serializers.KafkaAvroDeserializer
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        # Deliver the generated Order type rather than a GenericRecord.
+        specific.avro.reader: true
+    listener:
+      # One consumer thread against one partition, so the running average is deterministic
+      # and reproducible in the recorded demonstration.
+      concurrency: 1
+
+app:
+  orders-topic: ${ORDERS_TOPIC:orders.v1}
+
+logging:
+  pattern:
+    # Timestamps matter: the two-second retry delay has to be visible on screen in Task 7.
+    console: "%d{HH:mm:ss.SSS} %-5level %-28logger{0} : %msg%n"
+  level:
+    root: INFO
+    com.ashfaq.bigdata: INFO
+    # Framework chatter is turned down so the demonstration output stays readable.
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN

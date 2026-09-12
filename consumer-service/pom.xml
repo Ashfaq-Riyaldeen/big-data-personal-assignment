@@ -57,14 +57,16 @@
     </dependency>
 
     <!--
-      Provides MockSchemaRegistryClient, which backs the mock:// schema registry URL used by
-      the integration tests. That is what lets the whole build run with no Docker.
+      kafka-schema-registry-client is deliberately NOT declared here. It arrives transitively
+      from kafka-avro-serializer at compile scope, which is what the deserializer needs at
+      runtime, and a compile-scoped dependency is on the test classpath too - so the
+      MockSchemaRegistryClient behind the mock:// URL in the integration tests still resolves.
+
+      Declaring it explicitly with test scope, as this module previously did, silently broke the
+      application: Maven's nearest-definition-wins rule let the direct test-scoped declaration
+      override the transitive compile-scoped one, so the class was missing at runtime and the
+      consumer died on startup with NoClassDefFoundError: RestClientException.
     -->
-    <dependency>
-      <groupId>io.confluent</groupId>
-      <artifactId>kafka-schema-registry-client</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
