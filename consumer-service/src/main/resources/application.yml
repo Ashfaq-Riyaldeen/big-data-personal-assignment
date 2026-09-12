@@ -8,6 +8,27 @@ spring:
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+    # The consumer is also a producer. Retry and dead-letter routing works by republishing the
+    # failed record to another topic, so the KafkaTemplate behind @RetryableTopic must be able
+    # to serialise an Avro Order. Without this block Spring Boot auto-configures a template with
+    # the default StringSerializer, every republish fails with
+    #   "Can't convert value of class ...avro.Order to class StringSerializer"
+    # and the record is redelivered from the original topic forever instead of retrying.
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        # Must stay true. Subjects follow the default TopicNameStrategy, so republishing to the
+        # retry and dead-letter topics needs orders.v1-retry-0-value, orders.v1-retry-1-value and
+        # orders.v1-dlt-value registered as well - the producer service only ever registers
+        # orders.v1-value. With this false, every republish fails with
+        #   "Error retrieving latest version of Avro schema"
+        # and the record is redelivered from the original topic forever.
+        auto.register.schemas: true
+
     consumer:
       group-id: ${CONSUMER_GROUP_ID:orders-consumer-v1}
       # Only applies when the group has no committed offset, so a fresh consumer catches up
@@ -31,6 +52,11 @@ spring:
 
 app:
   orders-topic: ${ORDERS_TOPIC:orders.v1}
+  retry:
+    # Three total processing attempts: the original plus two retries, which is what produces
+    # the two retry topics orders.v1-retry-0 and orders.v1-retry-1.
+    attempts: ${RETRY_ATTEMPTS:3}
+    delay-ms: ${RETRY_DELAY_MS:2000}
 
 logging:
   pattern:
