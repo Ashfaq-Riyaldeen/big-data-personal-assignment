@@ -20,8 +20,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  * Consumes Avro orders, maintains the running average, and drives the retry policy.
  *
@@ -130,14 +128,16 @@ public class OrderListener {
     public void onDeadLetter(@Payload(required = false) Order order,
                              @Headers MessageHeaders headers) {
 
-        String originTopic = headerAsString(headers, KafkaHeaders.ORIGINAL_TOPIC);
+        String originTopic = DlqHeaders.asString(headers, KafkaHeaders.ORIGINAL_TOPIC);
         String origin = originTopic == null ? "unknown"
                 : originTopic
-                        + "-" + headerAsNumber(headers, KafkaHeaders.ORIGINAL_PARTITION)
-                        + "@" + headerAsNumber(headers, KafkaHeaders.ORIGINAL_OFFSET);
+                        + "-" + DlqHeaders.asNumber(headers, KafkaHeaders.ORIGINAL_PARTITION)
+                        + "@" + DlqHeaders.asNumber(headers, KafkaHeaders.ORIGINAL_OFFSET);
 
-        String cause = simpleName(headerAsString(headers, KafkaHeaders.EXCEPTION_CAUSE_FQCN));
-        String reason = stripListenerPrefix(headerAsString(headers, KafkaHeaders.EXCEPTION_MESSAGE));
+        String cause = DlqHeaders.simpleName(
+                DlqHeaders.asString(headers, KafkaHeaders.EXCEPTION_CAUSE_FQCN));
+        String reason = DlqHeaders.reason(
+                DlqHeaders.asString(headers, KafkaHeaders.EXCEPTION_MESSAGE));
 
         if (order == null) {
             // A poison pill: bytes on the topic that were never a valid Avro order.
@@ -158,54 +158,5 @@ public class OrderListener {
 
     private static String formatMoney(double value) {
         return String.format("%.2f", value);
-    }
-
-    /** Header values arrive as raw bytes or as already-converted objects depending on the type. */
-    private static String headerAsString(MessageHeaders headers, String name) {
-        Object value = headers.get(name);
-        if (value == null) {
-            return null;
-        }
-        return value instanceof byte[] bytes ? new String(bytes, StandardCharsets.UTF_8)
-                : value.toString();
-    }
-
-    /** Kafka writes the numeric headers as four big-endian bytes rather than as text. */
-    private static long headerAsNumber(MessageHeaders headers, String name) {
-        Object value = headers.get(name);
-        if (value == null) {
-            return -1;
-        }
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        if (value instanceof byte[] bytes) {
-            long result = 0;
-            for (byte b : bytes) {
-                result = (result << 8) | (b & 0xFF);
-            }
-            return result;
-        }
-        return -1;
-    }
-
-    /**
-     * Spring wraps the original message as "Listener failed; &lt;message&gt;". The wrapper adds
-     * nothing on screen, so only the original reason is shown.
-     */
-    private static String stripListenerPrefix(String message) {
-        if (message == null) {
-            return "unknown";
-        }
-        String prefix = "Listener failed; ";
-        return message.startsWith(prefix) ? message.substring(prefix.length()) : message;
-    }
-
-    private static String simpleName(String fullyQualifiedName) {
-        if (fullyQualifiedName == null) {
-            return "unknown";
-        }
-        int lastDot = fullyQualifiedName.lastIndexOf('.');
-        return lastDot < 0 ? fullyQualifiedName : fullyQualifiedName.substring(lastDot + 1);
     }
 }
