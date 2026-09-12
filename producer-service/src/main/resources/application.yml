@@ -39,3 +39,5 @@ logging:
     # Framework chatter is turned down so the demonstration output stays readable.
     org.apache.kafka: WARN
     org.springframework.kafka: WARN
+    # The Confluent serialiser dumps its full configuration (~90 keys) at INFO on creation.
+    io.confluent.kafka.serializers: WARN

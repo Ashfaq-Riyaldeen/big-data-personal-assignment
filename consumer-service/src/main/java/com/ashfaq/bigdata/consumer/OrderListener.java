@@ -137,9 +137,7 @@ public class OrderListener {
                         + "@" + headerAsNumber(headers, KafkaHeaders.ORIGINAL_OFFSET);
 
         String cause = simpleName(headerAsString(headers, KafkaHeaders.EXCEPTION_CAUSE_FQCN));
-        String reason = headerAsString(headers, KafkaHeaders.EXCEPTION_MESSAGE);
-        String attempts = String.valueOf(
-                headerAsNumber(headers, RetryTopicHeaders.DEFAULT_HEADER_ATTEMPTS));
+        String reason = stripListenerPrefix(headerAsString(headers, KafkaHeaders.EXCEPTION_MESSAGE));
 
         if (order == null) {
             // A poison pill: bytes on the topic that were never a valid Avro order.
@@ -148,10 +146,11 @@ public class OrderListener {
             return;
         }
 
-        log.error("[DLQ] orderId={} product={} price={} destination={} cause={} reason={} "
-                        + "attempts={} origin={}",
+        // The attempt history is already on screen from the [RECEIVED] and [RETRY] lines, so this
+        // line reports the verdict: what failed, why, and where it came from.
+        log.error("[DLQ] orderId={} product={} price={} destination={} cause={} reason={} origin={}",
                 order.getOrderId(), order.getProduct(), formatMoney(order.getPrice()),
-                DLT_TOPIC_LABEL, cause, reason, attempts, origin);
+                DLT_TOPIC_LABEL, cause, reason, origin);
 
         log.info("[AVERAGE] unchanged at {} - failed orders never enter the aggregate",
                 formatMoney(runningAverage.snapshot().average()));
@@ -188,6 +187,18 @@ public class OrderListener {
             return result;
         }
         return -1;
+    }
+
+    /**
+     * Spring wraps the original message as "Listener failed; &lt;message&gt;". The wrapper adds
+     * nothing on screen, so only the original reason is shown.
+     */
+    private static String stripListenerPrefix(String message) {
+        if (message == null) {
+            return "unknown";
+        }
+        String prefix = "Listener failed; ";
+        return message.startsWith(prefix) ? message.substring(prefix.length()) : message;
     }
 
     private static String simpleName(String fullyQualifiedName) {

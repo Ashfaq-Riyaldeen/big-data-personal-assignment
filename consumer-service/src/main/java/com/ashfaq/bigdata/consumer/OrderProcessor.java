@@ -58,16 +58,16 @@ public class OrderProcessor {
 
         String product = order.getProduct();
 
+        // The messages are kept short: they are echoed in the [RETRY] and [DLQ] log lines, which
+        // must stay on one line at a demonstration-sized font.
         if (ALWAYS_FAILURE_PRODUCT.equals(product)) {
             throw new TemporaryOrderException(
-                    "Simulated downstream failure on attempt " + attempt + " of " + totalAttempts
-                            + "; this product never recovers");
+                    "Downstream unavailable (attempt " + attempt + "/" + totalAttempts + ")");
         }
 
         if (TEMPORARY_FAILURE_PRODUCT.equals(product) && attempt < TEMP_FAIL_SUCCEEDS_ON_ATTEMPT) {
             throw new TemporaryOrderException(
-                    "Simulated transient failure on attempt " + attempt + " of " + totalAttempts
-                            + "; expected to recover on attempt " + TEMP_FAIL_SUCCEEDS_ON_ATTEMPT);
+                    "Transient failure (attempt " + attempt + "/" + totalAttempts + ")");
         }
 
         // A real system would persist the order or call downstream services here. For this

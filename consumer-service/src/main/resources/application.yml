@@ -65,6 +65,14 @@ logging:
   level:
     root: INFO
     com.ashfaq.bigdata: INFO
-    # Framework chatter is turned down so the demonstration output stays readable.
+    # Framework chatter is turned down so the demonstration output stays readable. Each rule
+    # below removes a specific source of noise measured in a real run:
     org.apache.kafka: WARN
     org.springframework.kafka: WARN
+    # The Confluent serialisers dump their full configuration (~90 keys) at INFO every time
+    # one is created, which happened ten times in one run. Not under org.apache.kafka.
+    io.confluent.kafka.serializers: WARN
+    # Logs a full stacktrace at ERROR for every record it routes to a retry topic or the DLQ.
+    # The [RETRY], [PERMANENT-ERROR] and [DLQ] lines already report the same event in one
+    # line each, and the routed records are visible in Kafka UI, so this is pure duplication.
+    org.springframework.kafka.retrytopic.DeadLetterPublishingRecovererFactory: "OFF"
