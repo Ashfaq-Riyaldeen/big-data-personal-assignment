@@ -75,16 +75,37 @@
         <version>${avro.version}</version>
       </dependency>
 
+      <!--
+        The Confluent Schema Registry client pulls io.swagger.core.v3:swagger-annotations:2.1.10,
+        which ships the same io.swagger.v3.oas.annotations.* classes as the far newer
+        swagger-annotations-jakarta that springdoc depends on. Two artifacts providing one package
+        means whichever loads first wins, and the 2.1.10 copy has no Schema.types(), so springdoc
+        dies with NoSuchMethodError and /v3/api-docs returns 500. The Schema Registry client only
+        uses these annotations to document its own REST API, so excluding the stale copy is safe
+        and leaves the jakarta artifact to supply the classes.
+      -->
       <dependency>
         <groupId>io.confluent</groupId>
         <artifactId>kafka-avro-serializer</artifactId>
         <version>${confluent.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
         <groupId>io.confluent</groupId>
         <artifactId>kafka-schema-registry-client</artifactId>
         <version>${confluent.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>

@@ -1,0 +1,41 @@
+server:
+  # 8080, not 8081: the Schema Registry owns 8081 and Kafka UI owns 8090.
+  port: 8080
+
+spring:
+  application:
+    name: producer-service
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # The message on Kafka is a real Avro record, not JSON. This serialiser writes the
+      # Confluent wire format: [magic byte][schema id][Avro payload].
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8081}
+        # Registers order.avsc under the subject orders.v1-value on the first send, so the
+        # consumer and Kafka UI can both resolve the schema by id.
+        auto.register.schemas: true
+        enable.idempotence: true
+
+app:
+  orders-topic: ${ORDERS_TOPIC:orders.v1}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  pattern:
+    # Timestamps matter: the two-second retry delay has to be visible on screen later.
+    console: "%d{HH:mm:ss.SSS} %-5level %-28logger{0} : %msg%n"
+  level:
+    root: INFO
+    com.ashfaq.bigdata: INFO
+    # Framework chatter is turned down so the demonstration output stays readable.
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
