@@ -1,0 +1,25 @@
+22:15:16.665 INFO [RECEIVED] orderId=1001 product=Item1 price=100.00 attempt=1 topic=orders.v1
+22:15:16.669 INFO [SUCCESS] orderId=1001 attempt=1 processed=true
+22:15:16.672 INFO [AVERAGE] count=1 total=100.00 runningAverage=100.00
+22:15:22.189 INFO [RECEIVED] orderId=1002 product=Item2 price=300.00 attempt=1 topic=orders.v1
+22:15:22.190 INFO [SUCCESS] orderId=1002 attempt=1 processed=true
+22:15:22.190 INFO [AVERAGE] count=2 total=400.00 runningAverage=200.00
+22:15:24.105 INFO [RECEIVED] orderId=1003 product=TEMP_FAIL price=500.00 attempt=1 topic=orders.v1
+22:15:24.106 WARN [RETRY] orderId=1003 attempt=1 reason=Transient failure (attempt 1/3)
+22:15:27.153 INFO [RECEIVED] orderId=1003 product=TEMP_FAIL price=500.00 attempt=2 topic=orders.v1-retry-0
+22:15:27.154 WARN [RETRY] orderId=1003 attempt=2 reason=Transient failure (attempt 2/3)
+22:15:29.207 INFO [RECEIVED] orderId=1003 product=TEMP_FAIL price=500.00 attempt=3 topic=orders.v1-retry-1
+22:15:29.208 INFO [SUCCESS] orderId=1003 attempt=3 processed=true
+22:15:29.208 INFO [AVERAGE] count=3 total=900.00 runningAverage=300.00
+22:15:36.777 INFO [RECEIVED] orderId=1004 product=InvalidItem price=-10.00 attempt=1 topic=orders.v1
+22:15:36.782 ERROR [PERMANENT-ERROR] orderId=1004 reason=Price must be greater than zero, but was -10.0
+22:15:37.975 ERROR [DLQ] orderId=1004 product=InvalidItem price=-10.00 destination=orders.v1-dlt cause=PermanentOrderException reason=Price must be greater than zero, but was -10.0 origin=orders.v1-0@3
+22:15:37.975 INFO [AVERAGE] unchanged at 300.00 - failed orders never enter the aggregate
+22:15:45.533 INFO [RECEIVED] orderId=1005 product=ALWAYS_FAIL price=700.00 attempt=1 topic=orders.v1
+22:15:45.535 WARN [RETRY] orderId=1005 attempt=1 reason=Downstream unavailable (attempt 1/3)
+22:15:51.383 INFO [RECEIVED] orderId=1005 product=ALWAYS_FAIL price=700.00 attempt=2 topic=orders.v1-retry-0
+22:15:51.384 WARN [RETRY] orderId=1005 attempt=2 reason=Downstream unavailable (attempt 2/3)
+22:15:53.427 INFO [RECEIVED] orderId=1005 product=ALWAYS_FAIL price=700.00 attempt=3 topic=orders.v1-retry-1
+22:15:53.428 WARN [RETRY] orderId=1005 attempt=3 reason=Downstream unavailable (attempt 3/3)
+22:15:54.143 ERROR [DLQ] orderId=1005 product=ALWAYS_FAIL price=700.00 destination=orders.v1-dlt cause=TemporaryOrderException reason=Downstream unavailable (attempt 3/3) origin=orders.v1-0@4
+22:15:54.144 INFO [AVERAGE] unchanged at 300.00 - failed orders never enter the aggregate
