@@ -260,7 +260,11 @@ serialisation by value type so it can forward raw bytes as well as Avro orders.
 
 **No Docker is required.** The integration tests run against an embedded Kafka broker with an
 in-memory Schema Registry, so the build passes on any machine with a JDK. 70 tests across the three
-modules; about a minute on a laptop.
+modules.
+
+**The first build downloads Maven and around 200 MB of dependencies** and can take 10 to 15
+minutes on a machine with an empty Maven cache — it is resolving, not hung. Subsequent builds take
+about a minute.
 
 Stop the two services first if they are running: `clean` cannot delete a jar that a running JVM
 holds open, and the build fails before any test runs.
